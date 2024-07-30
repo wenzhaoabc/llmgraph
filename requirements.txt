@@ -1,0 +1,5 @@
+openai
+PyMuPDF
+dotenv
+requests
+shapely
