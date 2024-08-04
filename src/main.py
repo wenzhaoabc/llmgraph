@@ -156,5 +156,5 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv("../.env")
-    text_path = "./chapter1-personal_support.md"
+    text_path = "../examples/chapter1-personal_support.md"
     main(text_path)

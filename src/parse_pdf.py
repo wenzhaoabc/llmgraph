@@ -72,13 +72,17 @@ def _merge_rects(
         while rect_list:
             rect = rect_list.pop(0)
             for other_rect in rect_list:
-                if _is_near(rect, other_rect, distance) or (
-                    horizontal_distance
-                    and _is_horizontal_near(rect, other_rect, horizontal_distance)
-                ):
-                    rect = _union_rects(rect, other_rect)
-                    rect_list.remove(other_rect)
-                    merged = True
+                try:
+                    if _is_near(rect, other_rect, distance) or (
+                        horizontal_distance
+                        and _is_horizontal_near(rect, other_rect, horizontal_distance)
+                    ):
+                        rect = _union_rects(rect, other_rect)
+                        rect_list.remove(other_rect)
+                        merged = True
+                except Exception as e:
+                    print(f"Error merging rectangles: {e}")
+                    continue
             new_rect_list.append(rect)
         rect_list = new_rect_list
     return rect_list
@@ -325,3 +329,7 @@ def parse_pdf(
                 os.remove(page_image)
             all_rect_images.extend(rect_images)
     return content, all_rect_images
+
+
+parse_pdf(pdf_path="../testPdf.pdf", api_key="sk-MSNh9AoBJI9TlkYfkCthy6DAaJQ3rmmxJznJaoXbaHnmNBjy",
+          output_dir="../output", base_url="https://api.chatanywhere.tech", model="gpt-4o-mini")
