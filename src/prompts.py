@@ -95,3 +95,8 @@ Relationships:
 
 Your analysis should be thorough, logical, and based on the information provided in the entity and relationship list. Ensure that your inferences are well-reasoned and supported by the available data.
 """
+
+QA_PROMPT = """
+You are an expert in graph data utilization. The following is a list of entities and relationships extracted from the passage, as well as a list of pictures. Please answer the questions according to these entities and relationships, and quote appropriate pictures for explanation.
+"""
+

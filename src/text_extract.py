@@ -24,8 +24,9 @@ def nodes_text_to_list_of_dict(nodes: str) -> list[dict]:
             properties = None
         else:
             properties = properties.group(0)
-        properties = properties.replace("True", "true")
-        properties = properties.replace("False", "false")
+        if properties is not None:
+            properties = properties.replace("True", "true")
+            properties = properties.replace("False", "false")
         try:
             properties = json.loads(properties)
         except:
@@ -223,3 +224,5 @@ def merge_nodes_rels(nr1: dict[str, list], nr2: dict[str, list]) -> dict[str, li
         "nodes": list(merged_nodes.values()),
         "relationships": list(merged_relationships.values()),
     }
+
+
