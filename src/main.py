@@ -5,7 +5,7 @@ import sys
 
 sys.path[0] = sys.path[0] + "/../"
 
-from src.prompts import SYSTEM_PROMPT, ALIGN_PROMPT, DEEP_RELS, QA_PROMPT
+from src.prompts import SYSTEM_PROMPT, ALIGN_PROMPT, DEEP_RELS, QA_PROMPT, CONTINUE_PROMPT, LOOP_PROMPT
 from src.llm import LLM
 from src.text_extract import (
     get_nodes_relationships_from_rawtext,
@@ -46,6 +46,20 @@ def _extract_images_paths(document: str) -> list[str]:
     images = re.findall(r"!\[.*?\]\((.*?)\)", document)
     return images
 
+class LLMForEntityExctract:
+    def __init__(self, initial_system_prompt):
+        self.conversation_history = [
+            {"role": "system", "content": initial_system_prompt},
+        ]
+        self.llm = LLM()
+
+    def add_message_and_call_llm(self, new_message, model="gpt-4o-mini"):
+        self.conversation_history.append({"role": "user", "content": new_message})
+        res = self.llm.chat(self.conversation_history, callback=None, model=model)
+        # assistant_message = res["choices"][0]["message"]["content"]
+        # self.conversation_history.append({"role": "assistant", "content": assistant_message})
+        self.conversation_history.append({"role": "assistant", "content": res})
+        return res
 
 def extract_entities_relations(
     chunk: Chunk, prompt
@@ -54,14 +68,32 @@ def extract_entities_relations(
     使用LLM提取chunk中的实体及关系。
     """
 
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": chunk.text},
-    ]
-    llm = LLM()
-    # callback = lambda x: print(x, end="")
-    res = llm.chat(messages, callback=None, model="gpt-4o-mini")
-    logging.info(f"Extracted entities and relationships from chunk.llm res:\n {res}")
+    max_gleanings = 2   # 最大迭代次数
+    # messages = [
+    #     {"role": "system", "content": prompt},
+    #     {"role": "user", "content": chunk.text},
+    # ]
+    # llm = LLM()
+    # # callback = lambda x: print(x, end="")
+    # res = llm.chat(messages, callback=None, model="gpt-4o-mini")
+    # logging.info(f"Extracted entities and relationships from chunk.llm res:\n {res}")
+
+    llm = LLMForEntityExctract(prompt)
+    res = llm.add_message_and_call_llm(chunk.text)
+    logging.info(f"Extracted entities and relationships from chunk.llm: init iteration res:\n {res}")
+
+    for i in range(max_gleanings):
+        res = llm.add_message_and_call_llm(CONTINUE_PROMPT)
+        logging.info(f"Extracted entities and relationships from chunk.llm: {i} iteration res:\n {res}")
+        # results += response.output or ""
+
+        # if this is the final glean, don't bother updating the continuation flag
+        if i >= max_gleanings - 1:
+            break
+
+        continue_res = llm.add_message_and_call_llm(LOOP_PROMPT)
+        if continue_res != "YES":
+            break
 
     nodes_rels = get_nodes_relationships_from_rawtext(res)
     entities = [Entity.from_dict(node) for node in nodes_rels["nodes"]]
@@ -268,5 +300,5 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv("../.env")
-    text_path = "examples\chapter1-personal_support.md"
+    text_path = "..\examples\chapter1-personal_support.md"
     main(text_path)

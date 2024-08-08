@@ -39,6 +39,20 @@ python main.py
 
     实体/关系，辅助溯源的属性，比如images, chunkid，
 
+
+
+## 多轮迭代抽取(ccr)
+
+目前添加了对文本中实体和关系的多轮迭代抽取
+
+src.prompts引入CONTINUE_PROMPT, LOOP_PROMPT两个提示词，分别用于继续提取和判断是否提取结束
+
+src.main中添加新类LLMForEntityExctract，用于循环多轮迭代抽取，并保存对话历史
+
+src.main extract_entities_relations函数中添加局部变量max_gleanings（默认为2），即最大迭代次数，可以根据需要改成函数形参
+
+针对文本的多轮提取实体和关系的结果在log中记录init iteration res，  0 iteration res， 1 iteration res
+
 ## Coming Soon
 
 1. Benchmark

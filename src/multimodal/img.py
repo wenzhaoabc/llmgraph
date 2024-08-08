@@ -166,19 +166,30 @@ def extract_entity_rels_images(
     Extract entities, relationships and images from a chunk
     """
     image_base64 = encode_image(image.path)
+    # messages = [
+    #     {"role": "user", "content": EXTRACT_NODE_RELS_PROMPT},
+    #     {
+    #         "role": "user",
+    #         "content": "The follwing is the markdown text:"
+    #         + "\n".join([chunk.text for chunk in chunks]),
+    #     },
+    #     {
+    #         "role": "user",
+    #         "content": {
+    #             "type": "image_url",
+    #             "image_url": {"url": image_base64},
+    #         },
+    #     },
+    # ]
     messages = [
         {"role": "user", "content": EXTRACT_NODE_RELS_PROMPT},
         {
             "role": "user",
-            "content": "The follwing is the markdown text:"
-            + "\n".join([chunk.text for chunk in chunks]),
+            "content": "The following is the markdown text:\n" + "\n".join([chunk.text for chunk in chunks]),
         },
         {
             "role": "user",
-            "content": {
-                "type": "image_url",
-                "image_url": {"url": image_base64},
-            },
+            "content": "![image](" + image_base64 + ")",
         },
     ]
     llm = LLM()

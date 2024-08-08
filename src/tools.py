@@ -2,7 +2,7 @@ import base64
 
 
 def encode_image(image_path):
-    image_path = "examples/" + image_path
+    image_path = "../examples/" + image_path
     with open(image_path, "rb") as image_file:
         image_data = image_file.read()
 
