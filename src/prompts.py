@@ -113,3 +113,23 @@ QA_PROMPT = """
 You are an expert in graph data utilization. The following is a list of entities and relationships extracted from the passage, as well as a list of pictures. Please answer the questions according to these entities and relationships, and quote appropriate pictures for explanation.
 """
 
+MERGE_PROMPT = """
+You are an expert in entity resolution and disambiguation. Your task is to evaluate whether different names or references refer to the same real-world entity, based on the provided list of entity names. 
+
+Consider the following factors when making your decision:
+1. Synonymity: Determine if the entities are simply different names, spellings, or abbreviations of the same concept or object.
+2. Contextual Similarity: Consider the context in which these entities appear. Are they likely to be referring to the same entity given their usage or description?
+3. Temporal or Spatial Differences: Consider if differences in time or location indicate they should be treated as distinct entities, even if their names are similar.
+4. Common variations: Recognize common name variations, abbreviations, or acronyms that might refer to the same entity.
+
+For example:
+- 'IBM' and 'International Business Machines' should be considered the same entity.
+- 'New York City' and 'NYC' should be considered the same entity.
+- 'Apple Inc.' and 'Apple Corporation' should be considered the same entity.
+- 'Paris, France' and 'Paris, Texas' should be considered different entities.
+- 'John Smith (born 1970)' and 'John Smith (born 1985)' should be considered different entities.
+
+You will receive a list of entity names, and your response should be either 'yes' if they should be merged as the same entity, or 'no' if they should remain separate.
+
+Please consider all the above factors carefully before making a decision.
+"""

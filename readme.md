@@ -53,6 +53,38 @@ src.main extract_entities_relations函数中添加局部变量max_gleanings（�
 
 针对文本的多轮提取实体和关系的结果在log中记录init iteration res，  0 iteration res， 1 iteration res
 
+## 合并去重(wwj)
+
+* 实现步骤
+
+  1. 从 entity graph 开始
+  2. 构建K-邻近图，根据text embedding连接相似的实体
+  3. 在K-邻近图中过滤弱联通分量
+  4. 用LLM来评估是否要合并找出的相似实体
+  5. 合并Entities，更新Relationships
+
+* 具体实现
+
+  1. Text Embedding
+
+     使用BERT模型生成嵌入向量，目前使用Entity的name属性生成embedding。
+
+  2. Build KNN Graph
+
+     构建K邻近图，根据向量相似连接近似的节点，k的默认大小为5。
+
+  3. Filter Weakly Connected Components
+
+     根据K邻近图中的distance是否小于设定的阈值distance_threshold来判断是否为弱联通分量，阈值默认值为0.2。
+
+  4. Merge Entities
+
+     首先构建 MERGE_PROMPT 作为 system prompt 帮助模型更好理解合并任务，根据找到的若联通分量 components 构建user prompt让 llm 判断是否要合并components。
+
+  5. Update Relationships
+
+     根据合并的Entities来更新Relationships。
+
 ## Coming Soon
 
 1. Benchmark
