@@ -2,19 +2,7 @@
 This file contains the prompts for the multimodal task.
 """
 
-EXTRACT_TEXT_PROMPT = """
-Your task is to detect the entire image, then extract the text fragments present in it, and output a list of strings, for example
-[Text Snippet1, Text Snippet2]
-"""
-
-EXTRACT_IMAGE_TITLE_PROMPT = """
-You will be provided with a markdown text containing a reference to the image, and you will be tasked with identifying the title of the image based on the textual content. 
-For example, Figure 1: The SPREADSHEET LLM pipeline.
-Your output should follow this format: <image path; image title>.
-"""
-
-
-EXTRACT_NODE_RELS_PROMPT = """
+EXTRACT_IMAGE_ER_P: str = """
 You are an AI assistant specializing in knowledge graph extraction from multimodal data. Your task is to analyze both the image and its accompanying text to construct a comprehensive knowledge graph.
 
 Instructions:
@@ -25,23 +13,53 @@ Instructions:
 5. For entities not mentioned in the context but present in the image, create new entity entries.
 
 Output Format:
-1. Nodes: <ENTITY, TYPE, PROPERTIES>
+1. Entities: <ENTITY, TYPE, PROPERTIES, REFERENECES>
    - ENTITY: The name or identifier of the entity
    - TYPE: The category of the entity (e.g., Person, Organization, Place, Concept)
    - PROPERTIES: Relevant attributes of the entity, where the references field represents the original text where the entity appears, which is a string list, and the images field represents the picture path list where the entity appears.
-
-2. Relationships: <ENTITY_1, RELATIONSHIP, ENTITY_2, PROPERTIES>
+   - REFERENCES: The original text snippets where the entity is mentioned
+   
+2. Relationships: <ENTITY_1, RELATIONSHIP, ENTITY_2, PROPERTIES, REFERENCES>
    - ENTITY_1 and ENTITY_2: Must exist as nodes with matching ENTITY names
    - RELATIONSHIP: The type of connection between the entities
    - PROPERTIES: Any additional information about the relationship, where the references field represents the original text where the entity appears, which is a string list, and the images field represents the picture path list where the entity appears.
+   - REFERENCES: The original text snippets where the relationship is mentioned
 
 Example:
-Nodes:
-- <United States Marine Corps, Department, {"abbreviation":"USMC", "references": ["The United States Marine Corps (USMC) is a branch of the United States Armed Forces responsible for conducting expeditionary and amphibious operations.", "The Marine Corps is divided into four main components"]}>
+Entities:
+- <United States Marine Corps, Department, {"abbreviation":"USMC"}, ["The Marine Corps is divided into four main components"]>
 Relationships:
-- <United States Marine Corps, HAS_MOTTO, Semper Fidelis, {"references": ["The USMC's motto is \"Semper Fidelis\" (Always Faithful)."]}>
+- <United States Marine Corps, HAS_MOTTO, Semper Fidelis, {}, ["The USMC's motto is \"Semper Fidelis\" (Always Faithful)."]>
 
 
-Important: Only include relationships where both ENTITY_1 and ENTITY_2 exist as nodes. Omit any relationships that cannot be paired with existing nodes.
-Please provide a comprehensive set of nodes and relationships based on your analysis of both the image and its context.
+Important: 
+I will parse your response with the following regex: "Entities:\s*([\s\S]*?)Relationships:\s*([\s\S]*)"
+Only include relationships where both ENTITY_1 and ENTITY_2 exist as nodes. Omit any relationships that cannot be paired with existing nodes.
+Only extract entities and relationships that are relevant to the image. Avoid including extraneous information.
+"""
+
+EXTRACT_IMAGE_ATTRS_P: str ="""
+You are an AI assistant specializing in image analysis. Your task is to extract the attributes of the image based on the context provided.
+
+Instructions:
+1. Carefully examine the context text to identify any relevant information about the image.
+2. Extract the title of the image based on the textual content.
+3. Identify any text snippets in the context that correspond to the image.
+4. Generate a detailed description of the image based on the extracted attributes.
+
+Output Format:
+- Title: The title of the image, if mentioned in the context.
+- Text Snippets: Any text fragments in the context that refer to the image.
+- Description: A detailed description of the image based on the extracted attributes.
+
+Example:
+Title: Figure 1: The SPREADSHEET LLM pipeline
+Text Snippets: ["LLM", "SPREADSHEET LLM pipeline", "OpenAI"]
+Description: The image depicts the SPREADSHEET LLM pipeline, showcasing the various stages of data processing and analysis. The pipeline includes data ingestion, preprocessing, model training, and result visualization.
+
+Important:
+I will parse your response with the following regex:
+"Title:\s*(.*?)$\\nText Snippets:\s*(.*?)$\\nDescription:\s*(.*?)$"
+
+Please provide a comprehensive description of the image based on the context provided.
 """

@@ -1,4 +1,9 @@
-from dataclasses import dataclass
+"""
+This module contains the Entity class, which represents an entity.
+"""
+
+import json
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -8,38 +13,50 @@ class Entity:
     name: str
     """The name of the entity, unique in the database"""
 
-    label: str | None = None
+    label: str = ""
     """The label of the entity"""
 
-    references: list[str] | None = None
+    references: list[str] = field(default_factory=list)
     """The original text references of the entity"""
 
-    properties: dict[str, str] | None = None
+    properties: dict[str, str] = field(default_factory=dict)
     """The properties of the entity"""
 
-    images: list[str] | None = None
+    images: list[str] = field(default_factory=list)
     """The images associated with the entity"""
+
+    chunks: list[int] = field(default_factory=list)
+    """The chunks associated with the entity"""
 
     @classmethod
     def from_dict(cls, d: dict) -> "Entity":
         """
         Creates an entity from a dictionary.
         """
-        refernences = None
-        if d.get("properties") is not None and d.get("properties").get("references"):
-            del d["properties"]["references"]
-            refernences = d.get("properties").get("references")
         return Entity(
             name=d["name"],
-            label=d.get("label"),
-            references=refernences,
-            properties=d.get("properties"),
-            images=d.get("images"),
+            label=d["label"],
+            references=d["references"],
+            properties=d["properties"],
+            images=d["images"],
+            chunks=d["chunks"],
         )
 
     def to_dict(self) -> dict:
         """
         Converts the entity to a dictionary.
         """
-        pros = self.properties.update({"references": self.references})
-        return {"name": self.name, "label": self.label, "properties": pros}
+        return {
+            "name": self.name,
+            "label": self.label,
+            "references": self.references,
+            "properties": self.properties,
+            "images": self.images,
+            "chunks": self.chunks,
+        }
+
+    def to_origin_text(self) -> str:
+        """
+        Converts the entity to a string.
+        """
+        return f"<{self.name}, {self.label}, {json.dumps(self.properties)}, {json.dumps(self.references)}>"

@@ -1,0 +1,77 @@
+[MASTER]
+# A comma-separated list of package or module names from where C extensions may be loaded.
+extension-pkg-whitelist=
+
+# Add files or directories to the blacklist. They should be base names, not paths.
+ignore=CVS
+
+# Add files or directories matching the regex patterns to the blacklist. The regex matches against base names, not paths.
+ignore-patterns=
+
+# Python code to execute, usually for sys.path manipulation such as pygtk.require().
+init-hook=
+
+# Use multiple processes to speed up Pylint.
+jobs=1
+
+# List of plugins (as comma separated values of python module names) to load, usually to register additional checkers.
+load-plugins=
+
+[MESSAGES CONTROL]
+# Only show warnings with the listed confidence levels. Leave empty to show all. Valid levels: HIGH, INFERENCE, INFERENCE_FAILURE, UNDEFINED
+confidence=
+
+# Disable the message, report, category or checker with the given id(s). You can either give multiple identifiers separated by comma (,) or put this option multiple times.
+disable=C0111,  # Missing docstring
+        C0103,  # Variable name doesn't conform to snake_case naming style
+        R0903,  # Too few public methods
+        W1203,  # Use % formatting in logging functions and pass the % parameters as arguments
+
+# Enable the message, report, category or checker with the given id(s). You can either give multiple identifiers separated by comma (,) or put this option multiple times.
+enable=
+
+[REPORTS]
+# Set the output format. Available formats are text, parseable, colorized, json and msvs (visual studio).
+output-format=text
+
+# Tells whether to display a full report or only the messages.
+reports=no
+
+[LOGGING]
+# Logging modules to check that the string format arguments are in logging function parameter format.
+logging-modules=logging
+
+[BASIC]
+# Good variable names which should always be accepted, separated by a comma.
+good-names=i,j,k,ex,Run,_
+
+# Bad variable names which should always be refused, separated by a comma.
+bad-names=foo,bar,baz,toto,tutu,tata
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+[DESIGN]
+# Maximum number of arguments for function / method.
+max-args=5
+
+# Maximum number of attributes for a class (see R0902).
+max-attributes=10
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked (useful for modules/projects where namespaces are manipulated during runtime and thus existing member attributes cannot be deduced by static analysis). It supports qualified module names, as well as Unix pattern matching.
+ignored-modules=
+
+# List of classes names for which member attributes should not be checked (useful for classes with dynamically set attributes). This supports qualified class names, as well as Unix pattern matching.
+ignored-classes=
+
+[IMPORTS]
+# Allow wildcard imports from modules that define __all__.
+allow-wildcard-with-all=no
+
+# Analyse import fallback blocks. This can be used to support both Python 2 and 3 compatible code, which means that the block might have code that exists only in one or another interpreter, leading to false positives when analysed.
+analyse-fallback-blocks=no

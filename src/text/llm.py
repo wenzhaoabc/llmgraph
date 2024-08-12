@@ -29,3 +29,7 @@ class LLM:
                 content += chunk.choices[0].delta.content
 
         return content
+
+    def embed(self, text: str, model: str = "text-embedding-ada-002") -> str:
+        emb = self.client.embeddings.create(model=model, input=[text])
+        return emb.data[0].embedding
