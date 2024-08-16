@@ -2,226 +2,161 @@
 This module contains functions for processing images.
 """
 
-import re
-from itertools import groupby
+import logging
+import concurrent.futures
 
-from src.text_extract import get_nodes_relationships_from_rawtext
-from src.tools import encode_image
-from src.llm import LLM
-from src.dataclass import Image, Chunk, Entity, Relationship
+from text.tools import encode_image, merge_nearby_text
+from text.llm import LLM
+from text.parse_text_er import parse_rawtext_to_er
+from dataclass import Image, Chunk, Entity, Relationship
+
+from .text_parse import parse_attris_from_rawtext, parse_rawtext_images
 from .prompts import (
-    EXTRACT_TEXT_PROMPT,
-    EXTRACT_IMAGE_TITLE_PROMPT,
-    EXTRACT_NODE_RELS_PROMPT,
+    EXTRACT_IMAGE_ER_P,
+    EXTRACT_IMAGE_ATTRS_P,
 )
 
 
-def parse_text_snippets(text: str) -> list[str]:
-    """
-    Parses text snippets from the raw text outtput by LLM.
-    """
-    regex = r"\[(.*?)\]"
-    result: list[str] = []
-    matches = re.findall(regex, text, re.MULTILINE)
-
-    for match in matches:
-        raw_text = str(match).strip().split(",")
-        if len(raw_text) < 1:
-            continue
-        text_snippet = raw_text[0].replace('"', "").strip()
-        result.append(text_snippet)
-
-    return result
+log = logging.getLogger("llmgraph")
 
 
-def extract_image_text(image_path: str) -> list[str]:
+def get_image_context_text(img: "Image", chunks: list["Chunk"]) -> str:
     """
-    Extracts text from images using OCR.
+    Get the context text of an image based on the chunks.
     """
-    image_base64 = encode_image(image_path)
+    cs = [c for c in chunks if c.id in img.chunks or img.title in c.text]
+    sorted(cs, key=lambda x: x.id)
+    return merge_nearby_text([c.text for c in cs]) or ""
+
+
+def extract_images_from_chunk(
+    doc: "Chunk",
+) -> list["Image"]:
+    """
+    Extract images from each chunk
+    """
+    imgs = parse_rawtext_images(doc.text)
+    for img in imgs:
+        img.chunks.append(doc.id)
+    log.info(f"Extracted {len(imgs)} images from chunk {doc.id}")
+    log.debug(f"Chunk {doc.id} Images: {imgs}")
+
+    return imgs
+
+
+def extract_image_attri(
+    image: "Image",
+    context_text: str,
+    llm: "LLM",
+) -> "Image":
+    """
+    Extracts the attributes of images in context text
+    """
+    image_base64 = encode_image(image.path)
     messages = [
-        {"role": "system", "content": EXTRACT_TEXT_PROMPT},
+        {"role": "system", "content": EXTRACT_IMAGE_ATTRS_P},
         {
             "role": "user",
             "content": [
                 {
-                    "type": "image_url",
-                    "image_url": {"url": image_base64},
-                }
+                    "type": "text",
+                    "text": f"The image path is {image.path}. The image context: \n"
+                    + context_text,
+                },
+                {"type": "image_url", "image_url": {"url": image_base64}},
             ],
         },
     ]
-    llm = LLM()
     res = llm.chat(messages, callback=None, model="gpt-4o-mini")
-    text_snippets = parse_text_snippets(res)
-    return text_snippets
-
-
-def extract_image_title(chunk: Chunk) -> dict[str, str]:
-    """
-    Extracts the title of images in a chunk.
-    """
-    regex = r"!\[(.*?)\]\((.*?)\)"
-    matches = re.findall(regex, chunk.text, re.MULTILINE)
-    image_titles = {}
-    for match in matches:
-        title = match[0].strip()
-        path = match[1].strip()
-        image_titles[path] = title
-
-    image_paths = list(image_titles.keys())
-    prompt = (
-        EXTRACT_IMAGE_TITLE_PROMPT
-        + "\n"
-        + "Please extract titles for the following images: "
-        + str(image_paths)
+    log.debug(f"Extracted image attributes: image = {image}, llm res = {res}")
+    image = parse_attris_from_rawtext(res, image)
+    log.info(
+        f"Extracted attributes for image {image.path}, image title = {image.title}"
     )
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": chunk.text},
-    ]
 
-    llm = LLM()
-    res = llm.chat(messages, callback=None, model="gpt-4o-mini")
-    result: dict[str, str] = {}
-
-    regex = r"<(.*?);(.*?)>"
-    matches = re.findall(regex, res, re.MULTILINE)
-    for match in matches:
-        path = match[0].strip()
-        title = match[1].strip()
-        image_titles[path] = title
-        result[path] = title
-    return result
+    return image
 
 
-def extract_images(chunk: Chunk) -> list[Image]:
-    regex = r"!\[(.*?)\]\((.*?)\)"
-    matches = re.findall(regex, chunk.text, re.MULTILINE)
-    image_titles = extract_image_title(chunk)
-    images: list[Image] = []
-    for match in matches:
-        title = match[0].strip()
-        path = match[1].strip()
-        text_snippets = extract_image_text(path)
-        image = Image(
-            title=image_titles.get(path, title),
-            path=path,
-            text_snippets=text_snippets,
-            chunks=[chunk.index],
-        )
-        images.append(image)
-
-    return images
-
-
-def similar_chunks(image: Image, chunks: list[Chunk]) -> list[int]:
+def batch_extract_image_attri(
+    images: list["Image"],
+    chunks: list["Chunk"],
+    llm: "LLM",
+    batch_size: int = 5,
+) -> list["Image"]:
     """
-    Find similar chunks based on the text snippets extracted from an image
+    Batch extract attributes of images in context text
     """
-    result = []
-    for chunk in chunks:
-        if any(snippet in chunk.text for snippet in image.text_snippets):
-            result.append(chunk.index)
+    results: list["Image"] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
+        futures = []
+        for img in images:
+            context_text = get_image_context_text(img, chunks)
+            futures.append(executor.submit(extract_image_attri, img, context_text, llm))
 
-    return result
-
-
-def merge_entity_rels(
-    ens: list[Entity], rels: list[Relationship]
-) -> tuple[list[Entity], list[Relationship]]:
-    """
-    Merge entities and relationships
-    """
-    merged_ens: list[Entity] = []
-    merged_rels: list[Relationship] = []
-    for name, group in groupby(ens, key=lambda x: x.name):
-        group = list(group)
-        entity = group[0]
-        for e in group[1:]:
-            entity.images.extend(e.images)
-            entity.properties.update(e.properties)
-            entity.references.extend(e.references)
-            entity.references = list(set(entity.references))[:3]
-        merged_ens.append(entity)
-
-    for key, group in groupby(rels, key=lambda x: (x.start, x.type, x.end)):
-        group = list(group)
-        rel = group[0]
-        for r in group[1:]:
-            rel.images.extend(r.images)
-            rel.properties.update(r.properties)
-            rel.references.extend(r.references)
-            rel.references = list(set(rel.references))[:3]
-        merged_rels.append(rel)
-
-    return merged_ens, merged_rels
+        for future in concurrent.futures.as_completed(futures):
+            img = future.result()
+            results.append(img)
+    return results
 
 
-def extract_entity_rels_images(
-    chunks: list[Chunk],
-    image: Image,
+def extract_er_from_image(
+    image: "Image",
+    chunks: list["Chunk"],
+    llm: "LLM",
 ) -> tuple[list["Entity"], list["Relationship"]]:
     """
-    Extract entities, relationships and images from a chunk
+    Extract entities, relationships and images from an image
     """
-    image_base64 = encode_image(image.path)
-    # messages = [
-    #     {"role": "user", "content": EXTRACT_NODE_RELS_PROMPT},
-    #     {
-    #         "role": "user",
-    #         "content": "The follwing is the markdown text:"
-    #         + "\n".join([chunk.text for chunk in chunks]),
-    #     },
-    #     {
-    #         "role": "user",
-    #         "content": {
-    #             "type": "image_url",
-    #             "image_url": {"url": image_base64},
-    #         },
-    #     },
-    # ]
+    image_encode = encode_image(image.path)
+    image_context_text = get_image_context_text(image, chunks)
+    prompt = "The following is the context of the image:\n" + image_context_text
+    prompt += "\nImage Attributes: \n" + str(image.to_dict())
+
     messages = [
-        {"role": "user", "content": EXTRACT_NODE_RELS_PROMPT},
+        {"role": "system", "content": EXTRACT_IMAGE_ER_P},
         {
             "role": "user",
-            "content": "The following is the markdown text:\n" + "\n".join([chunk.text for chunk in chunks]),
-        },
-        {
-            "role": "user",
-            "content": "![image](" + image_base64 + ")",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image_encode},
+                },
+            ],
         },
     ]
-    llm = LLM()
     res = llm.chat(messages, callback=None, model="gpt-4o-mini")
-    nodes_rels = get_nodes_relationships_from_rawtext(res)
-    entitys = [Entity.from_dict(d=n) for n in nodes_rels["nodes"]]
-    for e in entitys:
-        if e.properties.has_key("references"):
-            e.references = e.properties["references"]
-            del e.properties["references"]
-
-        if e.name in image.text_snippets:
-            e.images = [image.path]
-
-    rels = [Relationship.from_dict(r) for r in nodes_rels["relationships"]]
-    for r in rels:
-        if r.properties.has_key("references"):
-            r.references = r.properties["references"]
-            del r.properties["references"]
-
-        if r.start in image.text_snippets or r.end in image.text_snippets:
-            r.images = [image.path]
-
-    return entitys, rels
+    log.debug(f"Extracted ER from image {image}, llm res = {res}")
+    es, rs = parse_rawtext_to_er(res)
+    for e in es:
+        e.images.append(image.path)
+    for r in rs:
+        r.images.append(image.path)
+    return es, rs
 
 
-"""
-全文检索，查找可能chunk
-实体与图片对应
-多跳关系
-检索测试
+def batch_extract_er_from_images(
+    images: list["Image"],
+    chunks: list["Chunk"],
+    llm: "LLM",
+    batch_size: int = 5,
+) -> tuple[list["Entity"], list["Relationship"]]:
+    """
+    Batch extract entities and relationships from images
+    """
+    results: list[tuple[list["Entity"], list["Relationship"]]] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
+        futures = []
+        for img in images:
+            futures.append(executor.submit(extract_er_from_image, img, chunks, llm))
 
-图表论文
-PDF抽取
-"""
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            results.append(result)
+    entities: list["Entity"] = []
+    relationships: list["Relationship"] = []
+    for es, rs in results:
+        entities.extend(es)
+        relationships.extend(rs)
+
+    return entities, relationships

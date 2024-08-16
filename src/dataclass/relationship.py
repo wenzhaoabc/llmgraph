@@ -1,8 +1,9 @@
 """
-
+This module contains the Relationship dataclass.
 """
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -16,14 +17,16 @@ class Relationship:
     type: str
     """The label of the relationship"""
 
-    references: list[str] | None = None
+    references: list[str] = field(default_factory=list)
     """The original text references of the relationship"""
 
-    properties: dict[str, str] | None = None
+    properties: dict[str, str] = field(default_factory=dict)
     """The properties of the relationship"""
 
-    images: list[str] | None = None
+    images: list[str] = field(default_factory=list)
     """The images associated with the relationship"""
+
+    chunks: list[int] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, d: dict) -> "Relationship":
@@ -34,19 +37,28 @@ class Relationship:
             start=d["start"],
             end=d["end"],
             type=d["type"],
-            references=d.get("references"),
-            properties=d.get("properties"),
-            images=d.get("images"),
+            references=d["references"],
+            properties=d["properties"],
+            images=d["images"],
+            chunks=d["chunks"],
         )
 
     def to_dict(self) -> dict:
         """
         Converts the relationship to a dictionary.
         """
-        pros = self.properties.update({"references": self.references})
         return {
             "start": self.start,
             "end": self.end,
             "type": self.type,
-            "properties": pros,
+            "references": self.references,
+            "properties": self.properties,
+            "images": self.images,
+            "chunks": self.chunks,
         }
+
+    def to_origin_text(self) -> str:
+        """
+        Converts the relationship to the original text.
+        """
+        return f"<{self.start}, {self.type}, {self.end}, {json.dumps(self.properties)}, {json.dumps(self.references)}>"

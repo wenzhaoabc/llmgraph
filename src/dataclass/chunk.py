@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Chunk:
-    index: int
+    id: int
     """The index of the chunk"""
 
     text: str
@@ -21,4 +21,10 @@ class Chunk:
         """
         Creates a chunk from a dictionary.
         """
-        return Chunk(index=d["index"], text=d["text"], length=d["length"])
+        return Chunk(id=d["id"], text=d["text"], length=d["length"])
+
+    def to_dict(self) -> dict:
+        """
+        Converts the chunk to a dictionary.
+        """
+        return {"id": self.id, "text": self.text, "length": self.length}
