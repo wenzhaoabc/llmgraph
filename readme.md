@@ -26,7 +26,7 @@ python main.py
 python -m unittest discover -s test -p "parse_test.py"
 ```
 
-## 技术方案
+## Roadmap
 
 1. 基于[Marker](https://github.com/VikParuchuri/marker)的PDF图文抽取
 
@@ -37,7 +37,7 @@ python -m unittest discover -s test -p "parse_test.py"
 2. 使用开源多模态大模型的图文实体抽取和对齐
 
     含文字的图片，全文检索文字片段连同图片一同发给LLM，提取实体，然后对齐
-    实体/关系，辅助溯源的属性，比如images, chunkid
+    实体/关系，辅助溯源的属性，如images, chunkid
 
 3. 结构溯源
 
@@ -48,11 +48,4 @@ python -m unittest discover -s test -p "parse_test.py"
 1. Benchmark
    1. 数据集： 科技论文，CS论文，NLP论文，CV论文，医学论文， 维基百科，en/zh
    2. 评测标准：实体抽取，关系抽取，实体对齐，关系对齐，准确性
-2. 多轮迭代抽取
-3. 实体聚类合并,附加原文
-
-
-
-1. 缩写特殊处理
-2. 实体检索
-3. LLM的选择，开源/上下文长度
+2. LLM的选择，开源/上下文长度
