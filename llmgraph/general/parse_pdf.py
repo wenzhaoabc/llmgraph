@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Optional, Dict
+from typing import Optional, Dict
 import logging
 
 logging.basicConfig(
@@ -58,10 +58,10 @@ def _union_rects(rect1: BaseGeometry, rect2: BaseGeometry) -> BaseGeometry:
 
 
 def _merge_rects(
-    rect_list: List[BaseGeometry],
+    rect_list: list[BaseGeometry],
     distance: float = 20,
     horizontal_distance: Optional[float] = None,
-) -> List[BaseGeometry]:
+) -> list[BaseGeometry]:
     """
     Merge rectangles in the list if the distance between them is less than the target.
     """
@@ -85,10 +85,10 @@ def _merge_rects(
 
 
 def _adsorb_rects_to_rects(
-    source_rects: List[BaseGeometry],
-    target_rects: List[BaseGeometry],
+    source_rects: list[BaseGeometry],
+    target_rects: list[BaseGeometry],
     distance: float = 10,
-) -> Tuple[List[BaseGeometry], List[BaseGeometry]]:
+) -> tuple[list[BaseGeometry], list[BaseGeometry]]:
     """
     Adsorb a set of rectangles to another set of rectangles.
     """
@@ -106,7 +106,7 @@ def _adsorb_rects_to_rects(
     return new_source_rects, target_rects
 
 
-def _parse_rects(page: fitz.Page) -> List[Tuple[float, float, float, float]]:
+def _parse_rects(page: fitz.Page) -> list[tuple[float, float, float, float]]:
     """
     Parse drawings in the page and merge adjacent rectangles.
     """
@@ -166,7 +166,7 @@ def _parse_rects(page: fitz.Page) -> List[Tuple[float, float, float, float]]:
 
 def _parse_pdf_to_images(
     pdf_path: str, output_dir: str = "./"
-) -> List[Tuple[str, List[str]]]:
+) -> list[tuple[str, list[str]]]:
     """
     Parse PDF to images and save to output_dir.
     """
@@ -209,7 +209,7 @@ def _parse_pdf_to_images(
 
 
 def _gpt_parse_images(
-    image_infos: List[Tuple[str, List[str]]],
+    image_infos: list[tuple[str, list[str]]],
     prompt_dict: Optional[Dict] = None,
     output_dir: str = "./",
     api_key: Optional[str] = None,
@@ -243,7 +243,7 @@ def _gpt_parse_images(
         role_prompt = DEFAULT_ROLE_PROMPT
         logging.info("role_prompt is not provided, using default prompt.")
 
-    def _process_page(index: int, image_info: Tuple[str, List[str]]) -> Tuple[int, str]:
+    def _process_page(index: int, image_info: tuple[str, list[str]]) -> tuple[int, str]:
         logging.info(f"gpt parse page: {index}")
         agent = Agent(
             role=role_prompt,
@@ -297,7 +297,7 @@ def parse_pdf(
     verbose: bool = False,
     gpt_worker: int = 1,
     **args,
-) -> Tuple[str, List[str]]:
+) -> tuple[str, list[str]]:
     """
     Parse a PDF file to a markdown file.
     """
