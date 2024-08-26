@@ -15,16 +15,20 @@ import concurrent.futures
 from functools import partial
 from langchain_text_splitters import MarkdownTextSplitter
 
-from dataclass import Chunk, Entity, Relationship, Image
-from multimodal import (
+from ..dataclass import Chunk, Entity, Relationship, Image
+from ..multimodal import (
     extract_images_from_chunk,
     merge_images,
     batch_extract_image_attri,
     batch_extract_er_from_images,
 )
-from .llm import LLM
-from .prompts import EXTRACT_ENTITY_REL_P, CONTINUE_EXTRACT_P, IF_COTINUE_P
-from .parse_text_er import parse_rawtext_to_er, merge_er
+from ..common.llm import LLM
+from .prompts import (
+    EXTRACT_ENTITY_REL_P,
+    CONTINUE_EXTRACT_P,
+    IF_COTINUE_P,
+)
+from .parse_text_er import parse_rawtext_to_er, merge_er, extract_acronym
 from .merge_er import merge_er_by_llm
 
 log = logging.getLogger("llmgraph")
@@ -44,6 +48,46 @@ def split_document(
         result_chunk.append(c)
 
     return result_chunk
+
+
+def extract_acronym_extities(
+    text: str, llm: LLM
+) -> tuple[list["Entity"], list["Relationship"]]:
+    """
+    Extract entities from acronyms in text
+    """
+    entities: list["Entity"] = []
+    acronyms = extract_acronym(text)
+    prompt = "Full name and acronym:\n"
+    prompt += ", ".join(
+        [f"({full_text}, {acronym})" for full_text, acronym in acronyms]
+    )
+    prompt += "\nThe Text:\n" + text
+
+    messages = [
+        {"role": "system", "content": EXTRACT_ENTITY_REL_P},
+        {"role": "user", "content": prompt},
+    ]
+
+    res = llm.chat(messages=messages, callback=None, model="gpt-4o-mini")
+    log.debug(f"Extracted entities from acronyms in text, llm response: {res}")
+    entities, rels = parse_rawtext_to_er(res)
+    full_acronyms_dict = dict(acronyms)  #  {full_text: acronym }
+    acronyms_full_dict = {acronym: full_text for full_text, acronym in acronyms}
+
+    acronym_list = [acronym for _, acronym in acronyms]
+    for e in entities:
+        if e.name in acronym_list:
+            e.name = acronyms_full_dict[e.name]
+            e.properties["acroyum"] = full_acronyms_dict[e.name]
+
+    for r in rels:
+        if r.start in acronym_list:
+            r.start = acronyms_full_dict[r.start]
+        if r.end in acronym_list:
+            r.end = acronyms_full_dict[r.end]
+
+    return entities, rels
 
 
 def extract_er_from_chunk(
@@ -87,6 +131,27 @@ def extract_er_from_chunk(
 
     log.debug(f"Extract ER from chunk {doc.id}, llm output: {llm_output}")
     entities, relationships = parse_rawtext_to_er(llm_output)
+
+    es2, rs2 = extract_acronym_extities(doc.text, llm)
+    log.info(
+        f"Extract {len(es2)} entities and {len(rs2)} relationships from acronyms text, chunk {doc.id}"
+    )
+    log.debug(f"Acronym Entities Chunk {doc.id}: {es2}, Relationships: {rs2}")
+    acronyms_full_dict = {
+        e.properties.get("acroyum"): e.name for e in es2 if e.properties.get("acroyum")
+    }
+    for e in entities:
+        if e.name in acronyms_full_dict.keys():
+            e.name = acronyms_full_dict[e.name]
+
+    for r in relationships:
+        if r.start in acronyms_full_dict.keys():
+            r.start = acronyms_full_dict[r.start]
+        if r.end in acronyms_full_dict.keys():
+            r.end = acronyms_full_dict[r.end]
+
+    entities.extend(es2)
+    relationships.extend(rs2)
 
     for e in entities:
         e.chunks.append(doc.id)
@@ -200,9 +265,10 @@ def pipeline(
     entities, relationships = merge_er_by_llm(entities, relationships, llm)
     entities, relationships = merge_er(entities, relationships)
     log.info(
-        "Finished extracting ER Image from text, Entities: {}, Relationships: {}, Image: {}".format(
-            len(entities), len(relationships), len(images)
-        )
+        "Finished extracting ER Image from text, Entities: %d, Relationships: %d, Image: %d",
+        len(entities),
+        len(relationships),
+        len(images),
     )
     entities_str = "\n".join([str(e.to_dict()) for e in entities])
     relationships_str = "\n".join([str(r.to_dict()) for r in relationships])

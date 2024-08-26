@@ -7,10 +7,32 @@ import json
 import logging
 
 
-from dataclass import Entity, Relationship
-from .tools import shorten_string, remove_duplicates
+from ..dataclass import Entity, Relationship
+from ..common.tools import shorten_string, remove_duplicates
 
 log = logging.getLogger("llmgraph")
+
+
+def extract_acronym(text: str) -> list[tuple[str, str]]:
+    """
+    Extract acronyms from text
+    """
+    pattern = r"\b([A-Za-z\s]+)\s?\(([A-Z]+)\)"
+
+    matches = re.findall(pattern, text)
+
+    result = []
+    for full_text, acronym in matches:
+        words = [
+            word
+            for word in full_text.split()
+            if word.lower() not in {"of", "is", "the", "and", "in", "on", "at", "to"}
+        ]
+
+        if len(words) >= len(acronym):
+            result.append((str(full_text).strip(), str(acronym).strip()))
+
+    return result
 
 
 def e_raw_parse(text: str) -> list["Entity"]:
@@ -31,13 +53,13 @@ def e_raw_parse(text: str) -> list["Entity"]:
         references: str = match.group(4).strip()
         try:
             properties = json.loads(properties)
-        except:
-            log.warning(f"Invalid entity properties: {properties}")
+        except (json.JSONDecodeError, TypeError) as e:
+            log.warning("Invalid entity properties: %s exception: %s", properties, e)
             properties = {}
         try:
             references: list[str] = json.loads(references)
-        except:
-            log.warning(f"Invalid entity references: {references}")
+        except (json.JSONDecodeError, TypeError) as e:
+            log.warning("Invalid entity references: %s, exception: %s", references, e)
             references = []
 
         entities.append(
@@ -67,13 +89,13 @@ def r_raw_parse(text: str) -> list["Relationship"]:
         references: str = match.group(5).strip()
         try:
             properties = json.loads(properties)
-        except:
-            log.warning(f"Invalid rel properties: {properties}")
+        except Exception as e:
+            log.warning("Invalid rel properties: %s, exception: %s", properties, e)
             properties = {}
         try:
             references: list[str] = json.loads(references)
-        except:
-            log.warning(f"Invalid rel references: {references}")
+        except Exception as e:
+            log.warning("Invalid rel references: %s, exception: %s", references, e)
             references = []
 
         relationships.append(
@@ -128,7 +150,7 @@ def merge_er(
     # Merge entities
     me: dict[tuple, "Entity"] = {}
     for entity in es:
-        key = (entity.name, entity.label)
+        key = (entity.name.upper(), entity.label.upper())
         if key not in me:
             me[key] = entity
         else:
@@ -154,7 +176,11 @@ def merge_er(
                 + f"(start, type, end) = {relationship.start, relationship.type, relationship.end}"
             )
             continue
-        key = (relationship.start, relationship.type, relationship.end)
+        key = (
+            relationship.start.upper(),
+            relationship.type.upper(),
+            relationship.end.upper(),
+        )
         if key not in mr:
             mr[key] = relationship
         else:

@@ -1,15 +1,10 @@
 """
-This is the main file to run the pipeline.
+This module is the entry point of the package. It initializes the logging system.
 """
 
 import sys
-import pickle
 import logging
-import os
 from datetime import datetime
-
-
-from text.extract import pipeline
 
 
 def setup_logging():
@@ -34,26 +29,3 @@ def setup_logging():
 
 
 setup_logging()
-
-
-def save_objects_to_file(obj_list, filename):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    with open(filename, "wb") as f:
-        pickle.dump(obj_list, f)
-
-
-def main():
-    es, rs, imgs = pipeline(text_path)
-    # save to file
-    save_objects_to_file(es, "res/entities.pkl")
-    save_objects_to_file(rs, "res/relationships.pkl")
-    save_objects_to_file(imgs, "res/images.pkl")
-    print("Entities and relationships extracted successfully!")
-
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-
-    load_dotenv("../.env")
-    text_path = "examples/chapter1-personal_support.md"
-    main()

@@ -6,10 +6,11 @@ import logging
 import re
 import json
 
-from dataclass import Image
-from text.tools import remove_duplicates
+from ..dataclass import Image
+from ..common.tools import remove_duplicates
 
 log = logging.getLogger("llmgraph")
+
 
 def parse_rawtext_images(rawtext: str) -> list["Image"]:
     """

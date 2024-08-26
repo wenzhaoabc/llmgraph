@@ -2,7 +2,7 @@
 This file contains the prompts for the multimodal task.
 """
 
-EXTRACT_IMAGE_ER_P: str = """
+EXTRACT_IMAGE_ER_P: str = r"""
 You are an AI assistant specializing in knowledge graph extraction from multimodal data. Your task is to analyze both the image and its accompanying text to construct a comprehensive knowledge graph.
 
 Instructions:
@@ -38,7 +38,7 @@ Only include relationships where both ENTITY_1 and ENTITY_2 exist as nodes. Omit
 Only extract entities and relationships that are relevant to the image. Avoid including extraneous information.
 """
 
-EXTRACT_IMAGE_ATTRS_P: str ="""
+EXTRACT_IMAGE_ATTRS_P: str = r"""
 You are an AI assistant specializing in image analysis. Your task is to extract the attributes of the image based on the context provided.
 
 Instructions:

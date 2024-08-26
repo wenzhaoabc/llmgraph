@@ -3,3 +3,7 @@ PyMuPDF
 dotenv
 requests
 shapely
+networkx
+scikit-learn
+scipy
+pylint

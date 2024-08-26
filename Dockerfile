@@ -6,6 +6,6 @@ COPY . /app
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8080
+EXPOSE 7860
 
-CMD ["python", "src/main.py"]
+CMD ["python", "text_er.py"]

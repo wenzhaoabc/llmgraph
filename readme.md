@@ -20,7 +20,11 @@ cd src
 python main.py
 ```
 
+## Test
 
+```bash
+python -m unittest discover -s test -p "parse_test.py"
+```
 
 ## 技术方案
 

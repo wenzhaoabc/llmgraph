@@ -1,33 +1,5 @@
-DEEP_RELS = """
-As an advanced AI system, your task is to analyze a list of entities and relationships extracted from text data. The entities are represented as <ENTITY, TYPE, PROPERTIES>, and the relationships are represented as <ENTITY_1, RELATIONSHIP, ENTITY_2, PROPERTIES>. The PROPERTIES field includes a 'references' attribute that lists the original text segments where the entity or relationship appears.
-
-Your objective is to identify and extract deeper, more complex relationships between entities that are not explicitly stated in the initial list. Focus on discovering:
-
-1. Multi-hop relationships connecting distant entities (e.g., A relates to B, B influences C, therefore A indirectly influences C)
-2. Hierarchical structures and nested relationships
-3. Causal chains and sequences of events
-4. Implicit connections or influences between concepts
-5. Shared attributes or properties linking multiple entities
-6. Temporal or spatial relationships between entities or events
-7. Comparative relationships between similar entities
-8. Abstract concepts or themes connecting multiple concrete entities
-
-Only output newly identified relationships that are not already present in the initial list. For each new relationship you identify, provide:
-- The entities involved
-- The nature of the relationship
-- A brief explanation of how you inferred this relationship
-- Any relevant properties or attributes associated with this new relationships
-
-Your output should like below and Do not output explanatory information, and do not output additional information that affects the parsing of the text.
-Relationships:
-- <United States Marine Corps, HAS_MOTTO, Semper Fidelis, {"references": ["The USMC's motto is \"Semper Fidelis\" (Always Faithful)."]}>
-- <Marine Forces Reserve, IS_PART_OF, United States Marine Corps, {"references": [" The Marine Corps is divided into four main components: Headquarters Marine Corps (HQMC), Operating Forces, Supporting Establishment, and Marine Forces Reserve (MARFORRES)."]}>
-
-Your analysis should be thorough, logical, and based on the information provided in the entity and relationship list. Ensure that your inferences are well-reasoned and supported by the available data.
 """
-
-QA_PROMPT = """
-You are an expert in graph data utilization. The following is a list of entities and relationships extracted from the passage, as well as a list of pictures. Please answer the questions according to these entities and relationships, and quote appropriate pictures for explanation.
+This module contains the prompts for the LLMGraph text generation tasks.
 """
 
 EXTRACT_ENTITY_REL_P: str = """
@@ -57,6 +29,29 @@ Entities:
 - <David H. Berger, Person, {"position": "Commandant of the Marine Corps"}, ["The Commandant, currently General David H. Berger, reports to the Secretary of the Navy (SECNAV)."]>
 Relationships:
 - <United States Marine Corps, HAS_MOTTO, Semper Fidelis, {}, ["The USMC's motto is \"Semper Fidelis.\""]>
+"""
+
+EXTRACT_ACRONYM_P="""
+You are an experienced knowledge graph expert in data science. Your task is to understand the text and extract entities and relationships from it.
+
+Definitions:
+- Entity: A specific thing or concept mentioned in a text, such as a person's name, place name, organization name, position, event, etc.
+- Relationship: A connection or interaction between entities, such as "working at," "located at," "friend," "happening at," etc.
+
+Input:
+You will receive a text that contains acronyms and their full forms. You will receive a list of acronyms and their full names, please determine whether they belong to entities, if so please output according to the given requirements, and output the relationship associated with them.
+
+Output Format:
+1. Entity: <ENTITY, LABEL, PROPERTIES, REFERENCES>
+   Where: ENTITY is the name of the entity, LABEL is the type of entity (e.g., Person, Organization, Location), PROPERTIES are the attributes of the entity, and REFERENCES are the original text segments where the entity appears.
+2. Relationships: <ENTITY_1, RELATIONSHIP, ENTITY_2, PROPERTIES, REFERENCES>
+   Where: ENTITY_1 and ENTITY_2 are the names of the connected entities, RELATIONSHIP is the type of relationship between them, PROPERTIES are the attributes of the relationship, and REFERENCES are the original text segments where the relationship appears.
+
+Important Notes:
+- Ensure ENTITY_1 and ENTITY_2 exist as nodes with matching ENTITY names.
+- Do not add a relationship if you cannot pair it with a pair of nodes.
+- Create a generic LABEL for each entity that describes it.
+- The format of REFERENCES should be a JSON list of strings.
 """
 
 CONTINUE_EXTRACT_P: str = """

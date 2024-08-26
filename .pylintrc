@@ -12,7 +12,7 @@ ignore-patterns=
 init-hook=
 
 # Use multiple processes to speed up Pylint.
-jobs=1
+jobs=3
 
 # List of plugins (as comma separated values of python module names) to load, usually to register additional checkers.
 load-plugins=
@@ -26,7 +26,8 @@ disable=C0111,  # Missing docstring
         C0103,  # Variable name doesn't conform to snake_case naming style
         R0903,  # Too few public methods
         W1203,  # Use % formatting in logging functions and pass the % parameters as arguments
-
+        C0301,  # Line too long
+        
 # Enable the message, report, category or checker with the given id(s). You can either give multiple identifiers separated by comma (,) or put this option multiple times.
 enable=
 

@@ -1,3 +1,0 @@
-"""
-Process Text To ER
-"""

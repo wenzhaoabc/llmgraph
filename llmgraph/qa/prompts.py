@@ -19,5 +19,6 @@ Relationships: <ENTITY_1, RELATIONSHIP, ENTITY_2, PROPERTIES, REFERENCES>
 Images: <TITLE, PATH, TEXT_SNIPPETS, DESCRIPTION>
 - REFERENCES is a JSON list of strings containing the original text segments where the entity or relationship appears.
 
+If there is no entity, relationship, or image data available, you should provide a response indicating that the information is not present.
 You may also include images in your response for visual support.
 """

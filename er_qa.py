@@ -2,6 +2,7 @@
 Question answering 
 """
 
+import os
 import re
 import logging
 import pickle
@@ -9,11 +10,11 @@ import pickle
 import gradio as gr
 
 
-from prompts import QUESTION_KEYWORDS, QA_PROMPT
-from text_parse import parse_keywords
+from llmgraph.qa.prompts import QUESTION_KEYWORDS, QA_PROMPT
+from llmgraph.qa.text_parse import parse_keywords
 
-from text import llm, tools
-from dataclass import Entity, Relationship, Image
+from llmgraph.common import llm, tools
+from llmgraph.dataclass import Entity, Relationship, Image
 
 
 log = logging.getLogger("llmgraph")
@@ -28,10 +29,12 @@ images: list["Image"] = []
 llm = llm.LLM()
 
 
-def replace_local_images_with_url(text, base_url="http://IP:PORT"):
+def replace_local_images_with_url(text, base_url: str = None):
     """
     Replace local images with url
     """
+    if not base_url:
+        base_url = os.getenv("ASSESTS_PATH", "http://localhost:8000")
     pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 
     def replace_match(match):
@@ -67,9 +70,25 @@ def search_rels_by_entities(es: list["Entity"]) -> list["Relationship"]:
 
 def search_extities_by_keywords(keywords: list[str]) -> list["Entity"]:
     result = []
+    keywords = [k.upper() for k in keywords]
+    e_words = {e.name.upper(): e for e in entities}
     for e in entities:
-        e_words = [k for k in e.name.split(" ") if len(k) > 1]
-        if any([w in e_words for w in keywords]):
+        e_words = [k.upper() for k in e.name.split(" ") if len(k) > 1]
+        if any([w.upper() in e_words for w in keywords]):
+            result.append(e)
+        elif e.properties.get("_alias") and any(
+            [w.upper() in keywords for w in e.properties.get("_alias")]
+        ):
+            result.append(e)
+        elif (
+            e.properties.get("acronym")
+            and e.properties.get("acronym").upper() in keywords
+        ):
+            result.append(e)
+        elif (
+            e.properties.get("abbreviation")
+            and e.properties.get("abbreviation").upper() in keywords
+        ):
             result.append(e)
     return result
 
@@ -86,7 +105,6 @@ def search_images_by_entities(es: list["Entity"], imgs: list["Image"]) -> list["
         if img.path in e_imgs:
             result.append(img)
     return result
-
 
 
 def answer_question(question: str):
@@ -108,7 +126,7 @@ def answer_question(question: str):
     )
     key_words = parse_keywords(key_words)
     log.info("Keyword length: " + str(len(key_words)))
-    # yield "The question key words is " + ", ".join(key_words)
+    call_back("The question key words is " + ", ".join(key_words))
 
     # search entities
     es = search_extities_by_keywords(key_words)
@@ -171,7 +189,7 @@ def user(user_input, history):
 
 
 with gr.Blocks() as demo:
-    chatbot = gr.Chatbot()
+    chatbot = gr.Chatbot(height=1200)
     msg = gr.Textbox(show_label=False, placeholder="Type your question here...")
     btn = gr.Button("Submit")
     with gr.Row():

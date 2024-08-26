@@ -5,10 +5,10 @@ This module contains functions for processing images.
 import logging
 import concurrent.futures
 
-from text.tools import encode_image, merge_nearby_text
-from text.llm import LLM
-from text.parse_text_er import parse_rawtext_to_er
-from dataclass import Image, Chunk, Entity, Relationship
+from ..common.tools import encode_image, merge_nearby_text
+from ..common.llm import LLM
+from ..general.parse_text_er import parse_rawtext_to_er
+from ..dataclass import Image, Chunk, Entity, Relationship
 
 from .text_parse import parse_attris_from_rawtext, parse_rawtext_images
 from .prompts import (

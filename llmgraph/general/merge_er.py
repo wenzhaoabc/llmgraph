@@ -12,9 +12,9 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 
-from dataclass import Entity, Relationship
-from .llm import LLM
-from .tools import remove_duplicates
+from ..dataclass import Entity, Relationship
+from ..common.llm import LLM
+from ..common.tools import remove_duplicates
 from .prompts import MERGE_ER_P
 
 
@@ -49,7 +49,7 @@ def create_graph(es: list["Entity"]) -> nx.DiGraph:
     for e in es:
         G.add_node(e.name, entity=e)
 
-    for i in range(len(es)):
+    for i, _ in enumerate(es):
         for j in range(i + 1, len(es)):
             e1_emb, e2_emb = (
                 entity_embeddings[es[i].name],
@@ -71,7 +71,7 @@ def get_er_groups(g: nx.Graph) -> list[list["Entity"]]:
         es = [g.nodes[n]["entity"] for n in component]
         sub_graphs.append(es)
 
-    sub_graphs_str = "\n".join([', '.join([e.name for e in es]) for es in sub_graphs])
+    sub_graphs_str = "\n".join([", ".join([e.name for e in es]) for es in sub_graphs])
     log.debug(f"Get weekly connected subgraphs: \n{sub_graphs_str}")
     log.info(f"Merge Entity By LLM, Get {len(sub_graphs)} weekly connected subgraphs")
     return sub_graphs
