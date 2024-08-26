@@ -30,9 +30,9 @@ def text_er(filepath: str):
     save_objects_to_file(rs, f"{folder_name}/relationships.pkl")
     save_objects_to_file(imgs, f"{folder_name}/images.pkl")
     print("Entities and relationships extracted successfully!")
-    es_txt = "\n".join([e.to_dict() for e in es])
-    rs_txt = "\n".join([r.to_dict() for r in rs])
-    imgs_txt = "\n".join([i.to_dict() for i in imgs])
+    es_txt = "\n".join([str(e.to_dict()) for e in es])
+    rs_txt = "\n".join([str(r.to_dict()) for r in rs])
+    imgs_txt = "\n".join([str(i.to_dict()) for i in imgs])
     return es_txt, rs_txt, imgs_txt
 
 
