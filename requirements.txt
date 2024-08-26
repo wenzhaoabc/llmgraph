@@ -1,6 +1,6 @@
 openai
 PyMuPDF
-dotenv
+python-dotenv
 requests
 shapely
 networkx
